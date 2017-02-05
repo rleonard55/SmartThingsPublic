@@ -5,7 +5,7 @@ metadata
 {
 	definition(
         name: "Smart Start",
-        namespace: "SmartStart",
+        namespace: "smartstart",
         author: "rleonard55",	
         description: "Start/stop/arm/disarm vehicle",
         iconUrl:"http://dl.myket.ir/imageresizing/icon/small/com.directed.android.viper.png",
