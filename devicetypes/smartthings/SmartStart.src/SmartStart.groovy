@@ -39,7 +39,7 @@ metadata
 		}
 	}
 }
-
+def parse(String description) {}
 def getServerUrl() { return "https://colt.calamp-ts.com" }
 def getLoginUrl(user, pass) { return getServerUrl()+"/auth/login/${user}/${pass}"}
 def getVehicleIdUrl(sessionId) { return getServerUrl()+"/device/advancedsearch?sessid=${sessionId}"}
