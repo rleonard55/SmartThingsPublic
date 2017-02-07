@@ -100,7 +100,6 @@ def pushFile(Url) {
 }
 
 private getDeviceId() {	
-	return "6c4f5ad637254e8697ea5b9f6862400b"
 	return getDevicePreferenceByName(device, "deviceId") 
 }
 private getServerUrl() { 
