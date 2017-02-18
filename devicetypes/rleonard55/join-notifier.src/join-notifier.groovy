@@ -16,9 +16,9 @@
  
 metadata {
 	definition (name: "Join Notifier", namespace: "rleonard55", author: "Rob Leonard", iconUrl: "https://joaoapps.com/wp-content/uploads/2015/11/com.joaomgcd.join_-270x250.png") {
-		command "push", ["string", "string", "string"]
-        command "push", ["string", "string"]
-        command "push", ["string"]
+		command "push3", ["string", "string", "string"]
+        command "push2", ["string", "string"]
+        command "push1", ["string"]
         command "pushUrl", ["string"]
         command "pushClipboard", ["string"]
         command "pushFile", ["string"]
@@ -45,11 +45,11 @@ metadata {
 
 def test() {
 	log.debug "Executing 'test'"
-    push("Hello $location")
+    push1("Hello $location")
 }
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-    push(description)
+    push1(description)
 }
 
 def deviceNotification() {
@@ -57,23 +57,25 @@ def deviceNotification() {
 	// TODO: handle 'deviceNotification' command
 }
 def deviceNotification(text) {
-	push(text)
+	push1(text)
 }
-
-def push(text) {
+def push() {
+	test()
+}
+def push1(text) {
 	def Map = [:]
 	Map.Text=text
 
     join_push(getRequestUrl(Map))
 }
-def push(text, title) {
+def push2(text, title) {
 	def Map = [:]
     Map.Text=text
     Map.Title=title
     
     join_push(getRequestUrl(Map))
 }
-def push(text, title, iconUrl) {
+def push3(text, title, iconUrl) {
 	def Map = [:]
     Map.Text=text
     Map.Title=title
