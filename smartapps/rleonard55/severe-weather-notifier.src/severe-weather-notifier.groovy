@@ -46,6 +46,22 @@ def settingsPage() {
             //input "silent", "enum", options: ["Yes","No"], title: "Silent alarm only (Yes/No), i.e. strobe", hideWhenEmpty:true
             //input "clear", "number", title:"Active (seconds)", defaultValue:0, hideWhenEmpty:true
         }
+        section("Only between these times...") {
+            input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+            if(startingX in [null, "A specific time"]) 
+            	input "starting", "time", title: "Start time", required: false
+            else if(startingX == "Sunrise") 
+            	input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+            else input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+                }
+        section() {
+            input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
+            if(endingX in [null, "A specific time"]) 
+            	input "ending", "time", title: "End time", required: false
+            else if(endingX == "Sunrise") 
+            	input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false, defaultValue: 0
+            else input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false, defaultValue: 0
+                } 
         section ("Also, Text alerts to...") {
             input("recipients", "contact", title: "Send notifications to") {
                 input "phone1", "phone", title: "Phone Number 1", required: false

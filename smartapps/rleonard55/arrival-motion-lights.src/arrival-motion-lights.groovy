@@ -146,13 +146,13 @@ def timeout() {
 private timeToRun() {
 
 	log.debug "Running timeToRun"
+    def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffset, sunsetOffset: startSunsetOffset)
 	def start = null
 	def stop = null
-    def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffset, sunsetOffset: startSunsetOffset)
-
-    if(starting!= null)
+    
+    if(startingX =="A specific time" && starting!= null)
     	start = timeToday(starting,location.timeZone)
-    if(ending!= null)
+    if(endingX == "A specific time" && ending!= null)
         stop = timeToday(ending,location.timeZone)
         
     if(startingX == "Sunrise")
@@ -164,6 +164,9 @@ private timeToRun() {
      if(endingX == "Sunset")
      	stop = s.sunset
 	
+    if(start == null || stop == null)
+    	return true
+    
      if(stop < start) 
      	stop = stop + 1
     
