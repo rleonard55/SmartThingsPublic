@@ -46,22 +46,24 @@ def settingsPage() {
             //input "silent", "enum", options: ["Yes","No"], title: "Silent alarm only (Yes/No), i.e. strobe", hideWhenEmpty:true
             //input "clear", "number", title:"Active (seconds)", defaultValue:0, hideWhenEmpty:true
         }
-        section("Only between these times...") {
-            input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
-            if(startingX in [null, "A specific time"]) 
-            	input "starting", "time", title: "Start time", required: false
+        section("Between These Times...") {
+        	input "startingX", "enum", title: "Only between these times", options: ["A specific time", "Sunrise", "Sunset"], submitOnChange: true, required: false
+            if(startingX == "A specific time") 
+            	input "starting", "time", title: "Start time", required: true
             else if(startingX == "Sunrise") 
-            	input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
-            else input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
-                }
-        section() {
-            input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
-            if(endingX in [null, "A specific time"]) 
-            	input "ending", "time", title: "End time", required: false
-            else if(endingX == "Sunrise") 
-            	input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false, defaultValue: 0
-            else input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false, defaultValue: 0
-                } 
+                input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+            else if(startingX == "Sunset") 
+            	input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+        	if(startingX != null) {
+            	input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], submitOnChange: true, required: true
+           		if(endingX == "A specific time") 
+            		input "ending", "time", title: "End time", required: true
+            	else if(endingX == "Sunrise") 
+            		input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+            	else if (endingX == "Sunset") 
+            		input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0 
+        	}
+		}
         section ("Also, Text alerts to...") {
             input("recipients", "contact", title: "Send notifications to") {
                 input "phone1", "phone", title: "Phone Number 1", required: false
@@ -81,7 +83,6 @@ def installed() {
 
 	initialize()
 }
-
 def updated() {
 	log.debug "Updated with settings: ${settings}"
     state.alertKeys = null
@@ -92,7 +93,6 @@ def updated() {
     
  //   checkForSevereWeather()
 }
-
 def initialize() {
 	//def sec = Math.round(Math.floor(Math.random() * 60))
 	//def min = Math.round(Math.floor(Math.random() * 60))
@@ -198,12 +198,44 @@ private modeOk() {
 	def result = !modes || modes.contains(location.mode)
 	return result
 }
+private timeToRun() {
+
+	log.debug "Running timeToRun"
+    def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffset, sunsetOffset: startSunsetOffset)
+	def start = null
+	def stop = null
+    
+    if(startingX =="A specific time" && starting!= null)
+    	start = timeToday(starting,location.timeZone)
+    if(endingX == "A specific time" && ending!= null)
+        stop = timeToday(ending,location.timeZone)
+        
+    if(startingX == "Sunrise")
+    	start = s.sunrise
+     if(startingX == "Sunset")
+    	start = s.sunset
+     if(endingX == "Sunrise")  
+      	stop = s.sunrise
+     if(endingX == "Sunset")
+     	stop = s.sunset
+	
+    if(start == null || stop == null)
+    	return true
+    
+     if(stop < start) 
+     	stop = stop + 1
+    
+    log.debug "start: ${start} | stop: ${stop}"
+    return timeOfDayIsBetween(start, stop, (new Date()), location.timeZone)
+}
 
 private send(message) {
     
     if(!modeOk())
     	return
-        
+    if(!timeToRun())
+    	return
+    
 	log.debug "Sending Msg: ${message}"
         
     settings.Tones.each{

@@ -19,9 +19,9 @@ definition(
     author: "Mitch Pond",
     description: "Service manager for Centralite 3400-X security keypad. Keeps keypad state in sync with Smart Home Monitor",
     category: "My Apps",
-    iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience.png",
-    iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
-    iconX3Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/Cat-Convenience@2x.png",
+    iconUrl: "http://cdn.device-icons.smartthings.com/Home/home3-icn.png",
+    iconX2Url: "http://cdn.device-icons.smartthings.com/Home/home3-icn@2x.png",
+    iconX3Url: "http://cdn.device-icons.smartthings.com/Home/home3-icn@2x.png",
     singleInstance: false)
 
 

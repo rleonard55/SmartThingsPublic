@@ -37,25 +37,27 @@ def settings() {
         section("Wait for ...") {
             input "myContact", "capability.contactSensor", title: "Contact Sensor?", required: false
         }
-        section("Timeout after/if...") {
+        section("Timeout after...") {
             input "myTimeoutMinutes", "number", title: "Timeout Minutes?", defaultValue: 5, required: true
         }
-        section("Between these times...") {
-            input "startingX", "enum", title: "Starting at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
-            if(startingX in [null, "A specific time"]) 
-            	input "starting", "time", title: "Start time", required: false
+        section("Between These Times...") {
+        	input "startingX", "enum", title: "Only between these times", options: ["A specific time", "Sunrise", "Sunset"], submitOnChange: true, required: false
+            if(startingX == "A specific time") 
+            	input "starting", "time", title: "Start time", required: true
             else if(startingX == "Sunrise") 
-            	input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
-            else input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
-                }
-        section() {
-            input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], defaultValue: "A specific time", submitOnChange: true
-            if(endingX in [null, "A specific time"]) 
-            	input "ending", "time", title: "End time", required: false
-            else if(endingX == "Sunrise") 
-            	input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false, defaultValue: 0
-            else input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: false, defaultValue: 0
-                } 
+                input "startSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+            else if(startingX == "Sunset") 
+            	input "startSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+        	if(startingX != null) {
+            	input "endingX", "enum", title: "Ending at", options: ["A specific time", "Sunrise", "Sunset"], submitOnChange: true, required: true
+           		if(endingX == "A specific time") 
+            		input "ending", "time", title: "End time", required: true
+            	else if(endingX == "Sunrise") 
+            		input "endSunriseOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0
+            	else if (endingX == "Sunset") 
+            		input "endSunsetOffset", "number", range: "*..*", title: "Offset in minutes (+/-)", required: true, defaultValue: 0 
+        	}
+		}
         section("Additional Settings") {
         	input "modes", "mode", title: "Only when mode is", multiple: true, required: false
         	input "myForceSeconds", "number", title: "Force wait Seconds?", defaultValue: 1, required: true
@@ -71,19 +73,19 @@ def installed() {
 }
 def updated() {
 	log.debug "Updated with settings: ${settings}"
-
+	
+    unschedule()
 	unsubscribe()
 	initialize()
 }
 def initialize() {
 	log.debug "Running Initalized"
 	subscribe(myPresence, "presence.present", forceOn)
-    subscribe(myContact, "contact.closed", reset)
 	// TODO: subscribe to attributes, devices, locations, etc.
 }
 
 def forceOn(evt) {
-	log.debug "Running force"
+	log.debug "Running 'forceOn'"
     
     if(state.LastForceTime!= null) {
     	runIn(myTimeoutMinutes*60,timeout)
@@ -99,6 +101,8 @@ def forceOn(evt) {
     	return }
         
 	log.debug "Running 'Force On'"
+    subscribe(myContact, "contact.closed", reset)
+    
     state.LastForceTime = now()
     state.LastResetTime = null
     
@@ -124,6 +128,10 @@ def reset(evt) {
     state.LastResetTime = now()
     
     def delay= 1000*myResetSeconds
+    
+    unschedule()
+    unsubscribe(myContact)
+   
 	def initialActionOn = mySwitches.collect{it.currentSwitch == "on"}
    
     mySwitches.eachWithIndex {s, i ->
@@ -139,6 +147,7 @@ def reset(evt) {
 }
 def timeout() {
 	log.debug "Running 'Timeout'"
+    
     if(state.LastResetTime == null)
     	reset(null)
 }
@@ -174,35 +183,6 @@ private timeToRun() {
     return timeOfDayIsBetween(start, stop, (new Date()), location.timeZone)
 }
 
-private timeToRun2(){
-
-    def currTime = now()
-	def start = null
-	def stop = null
-    def s = getSunriseAndSunset(zipCode: zipCode, sunriseOffset: startSunriseOffset, sunsetOffset: startSunsetOffset)
-
-    if(starting!= null)
-    	start = timeToday(starting,location.timeZone)
-    if(ending!= null)
-        stop = timeToday(ending,location.timeZone)
-        
-        log.debug "sunrise: ${s.sunrise.time} | sunset: ${s.sunset.time}"   
-        
-	if(startingX == "Sunrise")
-    	start = timeToday(s.sunrise.time,location.timeZone)
-     if(startingX == "Sunset")
-    	start = timeToday(s.sunset.time,location.timeZone)
-     if(endingX == "Sunrise")  
-      	stop = timeToday(s.sunrise.time,location.timeZone)
-     if(endingX == "Sunset")
-     	stop = timeToday(s.sunset.time,location.timeZone)
-     
-     if(stop < start) 
-     	stop = stop + 1
-        
-     log.debug "Start: ${start} | Stop: ${stop} | current: ${currTime}"   
-     return (currTime >= start && currTime <= stop)
-}
 private modeOk() {
 	log.debug "Running modeOk"
 	if(modes == null) return true
