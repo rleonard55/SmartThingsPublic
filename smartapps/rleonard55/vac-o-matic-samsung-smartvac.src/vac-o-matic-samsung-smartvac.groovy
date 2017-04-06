@@ -114,7 +114,8 @@ def PresenceSection(all = true) {
 }
 def VacuumSection(prompt="Start the Vacuum(s)", itemRequired = true, multiple = false) {
     section(prompt) {
-        input "myVacuums", "capability.switch", title: "Vacuum(s)", multiple: multiple, required: itemRequired
+    	//input "myVacuums", "device.SamsungRobotVacuum", title: "Vacuum(s)", multiple: multiple, required: itemRequired
+        input "myVacuums", "capability.timedSession", title: "Vacuum(s)", multiple: multiple, required: itemRequired
     }
 }
 def NotificationSection(prompt= "Send Notifications?", itemRequired = false) {
@@ -188,7 +189,7 @@ private subscribeIt() {
 
 	subscribe(presenceSensors, "presence.not present", onPresenceDepart)
     subscribe(myVacuums, "switch.on", onSwitchedOn)
-    
+    subscribe(myVacuums, "sessionStatus.running", onSwitchedOn)
 	//▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲  
 	logTrace "Exiting 'subscribeIt'"
 }
@@ -226,7 +227,7 @@ def onPresenceArrive(evt) {
     logDebug("Vacuums: ${myVacuums}")
     def result = myVacuums.any { v -> v.currentValue("operationState")=="cleaning" }
     
-    myVaccums.off()
+    myVacuums.cancel()
 
 	log.debug "result: ${result}"
     log.debug "dustbinReminder: ${dustbinReminder}"
@@ -239,6 +240,7 @@ def onPresenceArrive(evt) {
 	//▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲  
 	logTrace "Exiting 'onPresenceArrive'"
 }
+
 def onSwitchedOn(evt) {	
 	logTrace "Entering 'onSwitchedOn'"
 	//▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
@@ -251,32 +253,37 @@ def onSwitchedOn(evt) {
 }
 
 def preCheck() {
-
+	
+    logDebug("Starting Prechecks")
 	if(anyonePresent()) {
     	logDebug("Others are still present, skipping")
         return false
     }	
+    logDebug("PresenceOk = True")
     
     if(oncePerDay && ranToday()) {
     	logDebug("Already ran today, skipping")
     	 return false
     }
+    logDebug("RanTodayOk = True")
     
     if(!emumContainsOrNull(monthsToRun,(new Date()).format("MMM", location.timeZone))) {
     	logDebug("Not correct month, skipping")
     	 return false
     }
+	logDebug("MonthOk = True")
 
     if(!emumContainsOrNull(daysToRun,(new Date()).format("EEEE", location.timeZone))) {
     	logDebug("Not correct day, skipping")
     	 return false
     }
-
+	logDebug("DayOk = True")
+     
     if(!timeToRun()) {
     	 logDebug("Not time to run, skipping")
          return false
     }
-
+	logDebug("TimeOk = True")
 	logDebug("preCheck looks good")
     return true
 }
@@ -285,8 +292,8 @@ def doSomething() {
 	//▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
     
 	if(preCheck()) {
-		myVaccums.on()
-		log.Debug("On")
+		myVacuums.start()
+		logDebug("starting")
 	}
 	else
 	{
@@ -297,30 +304,6 @@ def doSomething() {
 	logTrace "Exiting 'doSomething'"
 }
 
-
-private monthToRun() {
-	logTrace "Entering 'monthToRun'"
-	//▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-    
-    logDebug("This is ${DateTime.format("MMM")}")
-    if(monthsToRun == null) return true;
-	return monthsToRun.contains((new Date()).format("MMM"))
-    
-	//▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲  
-	logTrace "Exiting 'monthToRun'"
-}
-private dayToRun() {
-	logTrace "Entering 'dayToRun'"
-	//▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-    
-    logDebug("Today is ${(new Date()).format("EEEE", location.timeZone)}")
-    
-    if(daysToRun == null) return true;
-	return daysToRun.contains((new Date()).format("EEEE", location.timeZone))
-    
-	//▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲  
-	logTrace "Exiting 'dayToRun'"
-}
 
 private timeToRun() {
 	logTrace "Entering 'timeToRun'"
@@ -359,6 +342,7 @@ private ranToday() {
 	if(state.LastRan == null) return false
 	def midnightToday = timeToday("00:00", location.timeZone)
     def last = Date.parse("yyyy-MM-dd'T'HH:mm:ssZ", state.LastRan)
+    logTrace("Midnight: ${midnightToday} | Last: ${last}")
     if(last > midnightToday)
     	return true
     return false
